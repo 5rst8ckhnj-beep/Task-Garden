@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Task Garden</title>
+  <link rel="icon" type="image/webp" href="./task_garden_icon.webp" />
+  <link rel="apple-touch-icon" href="./task_garden_icon.webp" />
+  <style>
+    :root { --ink:#f4f4f5; --muted:#a1a1aa; --paper:#09090b; --panel:#111113; --line:#2f2f35; --accent:#e50914; --good:#55d98b; --warn:#ff4d5a; --shadow:0 14px 40px #00000080; }
+    * { box-sizing:border-box; }
+    
+    body { margin:0; background:#08080a url("./background.webp") center top / cover fixed no-repeat; color:var(--ink); font-family:"HanaMinA","花園明朝","Hanazono Mincho","Hiragino Mincho ProN","Yu Mincho",serif; letter-spacing:.01em; }
+    button,input,select { font:inherit; } button { cursor:pointer; }
+    .app { max-width:1000px; margin:auto; position:relative; z-index:1; padding:42px 28px 64px; }
+    .app {
+      background:rgba(4,4,6,.28);
+      border:1px solid rgba(229,9,20,.16);
+      border-radius:20px;
+      padding-left:28px;
+      padding-right:28px;
+      backdrop-filter:blur(1.5px);
+    }
+    header { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:42px; }
+    h1 { font-size:30px; margin:0 0 8px; font-weight:700; letter-spacing:.07em; } .lede { color:var(--muted); margin:0; font-size:14px; line-height:1.7; }
+    .primary { background:linear-gradient(135deg,#e50914,#a90009); color:white; border:0; border-radius:8px; padding:12px 16px; white-space:nowrap; font-weight:650; box-shadow:var(--shadow); }
+    .primary:hover { background:linear-gradient(135deg,#ff1b26,#c5000a); transform:translateY(-1px); }
+    .today { margin-bottom:38px; }
+    .section-label { font-size:12px; color:var(--muted); letter-spacing:.13em; font-weight:700; margin-bottom:12px; }
+    .pick { background:linear-gradient(145deg,#151518,#0f0f11); border:1px solid #4b1b20; border-radius:16px; padding:25px; box-shadow:var(--shadow); min-height:180px; }
+    .pick.empty { display:grid; place-items:center; color:var(--muted); text-align:center; line-height:1.7; }
+    .pick-top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; } .pick h2 { margin:7px 0 8px; font-size:28px; letter-spacing:.02em; }
+    .reason { color:var(--warn); font-size:13px; font-weight:650; } .meta { color:var(--muted); font-size:13px; }
+    .pick-actions { display:flex; gap:8px; margin-top:22px; } .secondary { border:1px solid var(--line); color:var(--ink); background:transparent; border-radius:8px; padding:10px 13px; }
+    .secondary:hover { background:#211014; border-color:#8f1d27; }
+    .queue-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .queue-head p { color:var(--muted); font-size:13px; margin:0; }
+    .cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
+    .card { text-align:left; background:linear-gradient(145deg,#141416,#0e0e10); border:1px solid var(--line); border-radius:11px; padding:17px; transition:.15s; position:relative; }
+    .card-main { display:block; width:100%; padding:0; margin:0; border:0; border-radius:0; background:transparent; color:inherit; text-align:left; box-shadow:none; appearance:none; -webkit-appearance:none; } .card-main:hover,.card-main:focus { background:transparent; color:inherit; box-shadow:none; outline:none; } .card-actions { display:flex; gap:8px; margin-top:12px; } .card-edit,.card-delete { margin-top:0; flex:1; }
+    .card:hover { transform:translateY(-2px); border-color:#e50914; box-shadow:var(--shadow); } .card h3 { margin:5px 0 9px; font-size:17px; } .card .reason { margin-top:9px; }
+    .rank { color:var(--muted); font-size:11px; letter-spacing:.08em; font-weight:700; }
+    .tag { display:inline-block; border-radius:5px; padding:3px 7px; font-size:11px; font-weight:700; background:#27272b; color:#d4d4d8; border:1px solid #3f3f46; }
+    .due-days { color:#ff4d5a; font-size:18px; font-weight:800; letter-spacing:.02em; }
+    .tag.hot { background:#3a0d12; color:#ff6670; border-color:#8f1d27; } .tag.stuck { background:#35200b; color:#ffb454; border-color:#79501b; }
+    dialog { border:1px solid #4b1b20; border-radius:12px; padding:0; width:min(470px,calc(100vw - 32px)); box-shadow:0 24px 60px #201c1460; background:var(--panel); color:var(--ink); } dialog::backdrop { background:#000000b3; }
+    .modal { padding:25px; } .modal h2 { margin:0 0 6px; font-size:21px; } .modal p { color:var(--muted); line-height:1.6; font-size:13px; margin:0 0 20px; }
+    label { display:block; margin:14px 0 5px; font-size:12px; font-weight:700; color:#54514b; } input,select { width:100%; border:1px solid var(--line); padding:11px; border-radius:7px; background:#18181b; color:var(--ink); } input:focus,select:focus { outline:2px solid #dbb7aa; border-color:#bc806c; }
+    .filter { display:flex; gap:6px; margin:0 0 20px; } .filter button { border:1px solid var(--line); border-radius:20px; background:transparent; padding:7px 11px; font-size:12px; color:#625e56; } .filter button.active { background:#e50914; color:#fff; border-color:#e50914; box-shadow:0 0 14px #e5091440; }
+    .modal-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:24px; }
+    .session-name { font-size:25px; margin:10px 0 22px; } .outcomes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; } .outcome { min-width:0; text-align:center; border:1px solid var(--line); background:linear-gradient(145deg,#151518,#0e0e10); color:var(--ink); border-radius:12px; padding:12px 10px 13px; font-weight:700; transition:.16s; overflow:hidden; } .outcome img { display:block; width:100%; height:150px; object-fit:contain; object-position:center; margin:0 auto 5px; filter:drop-shadow(0 8px 16px #000); } .outcome small { display:block; font-weight:400; color:var(--muted); margin-top:5px; font-size:11px; line-height:1.5; } .outcome:hover { border-color:#e50914; background:linear-gradient(145deg,#211014,#141014); transform:translateY(-2px); box-shadow:0 10px 28px #0008,0 0 18px #e5091426; } .outcome:focus-visible { outline:2px solid #e50914; outline-offset:2px; }
+
+    .project-info { margin-top:20px; padding-top:17px; border-top:1px solid var(--line); } .project-info summary { color:var(--muted); font-size:13px; cursor:pointer; } .project-actions { display:flex; gap:14px; align-items:center; margin-top:15px; flex-wrap:wrap; } .project-actions button { margin-top:0; } .danger { color:#ff6670; background:none; border:0; padding:10px 0; text-decoration:underline; cursor:pointer; }
+    footer { margin-top:40px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; gap:10px; } footer button { background:none; border:0; color:inherit; padding:0; text-decoration:underline; } .sync-state { color:var(--good); font-weight:650; }
+
+    @media (max-width:760px) { .outcomes{grid-template-columns:1fr}.outcome{display:grid;grid-template-columns:90px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left}.outcome img{grid-row:1 / span 2;width:90px;height:100px;margin:0}.outcome small{margin-top:3px} }
+    @media (max-width:600px) { body{background-size:100% auto;background-position:center top;background-attachment:scroll;background-repeat:no-repeat;background-color:#08080a} .app{padding:28px 16px 48px} header{margin-bottom:28px; flex-direction:column} .cards{grid-template-columns:1fr}.pick h2{font-size:24px} footer{flex-direction:column} }
+  
+    .top-progress{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#0d0d10}.progress-head,.progress-item-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.progress-head{font-size:12px;color:var(--muted);font-weight:700}.progress-item{margin-top:10px}.progress-item-head{font-size:12px}.progress-item-head span{color:var(--muted);font-size:11px}.progress-steps{margin-top:7px}.top-progress .step{cursor:pointer}.top-progress .step input{cursor:pointer}.card .top-progress{margin-top:12px}.pick .top-progress{margin-bottom:2px}
+.work-items{margin-top:20px;padding-top:17px;border-top:1px solid var(--line)}
+    .work-item{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px;background:#0d0d10}
+    .work-item-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.work-item-name{font-weight:700}
+    .steps{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.step{display:flex;align-items:center;justify-content:flex-start;gap:9px;border:0;background:transparent;border-radius:0;padding:2px 0;font-size:13px;color:var(--muted);line-height:1.4;box-sizing:border-box}
+.step.done{color:#8de0b0;border:0;background:transparent}
+.step input{appearance:none;-webkit-appearance:none;width:44px;height:44px;min-width:44px;margin:0;padding:0;border:0;border-radius:50%;background:transparent url("./rose_bud.webp") center/contain no-repeat;cursor:pointer;flex:0 0 44px;box-sizing:border-box}
+.step input:checked{background-image:url("./rose_bloom.webp");}
+.step input:focus-visible{outline:2px solid #e50914;outline-offset:2px}
+.step.done input{filter:drop-shadow(0 0 5px #e5091466)}
+.step-label{display:block;min-width:0;line-height:1.4}
+    #sessionCompleteStep{appearance:none;-webkit-appearance:none;width:36px!important;height:36px;min-width:36px;margin:0;padding:0;border:0;border-radius:50%;background:transparent url("./rose_bud.webp") center/contain no-repeat;cursor:pointer;flex:none} #sessionCompleteStep:checked{background-image:url("./rose_bloom.webp")} #sessionCompleteStep:focus-visible{outline:2px solid #e50914;outline-offset:2px}
+    .item-builder{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px;background:#0d0d10}.item-builder-head{display:flex;gap:8px;align-items:center}.item-builder input{margin:0}.step-builder{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.step-chip{display:flex;gap:5px;align-items:center}.step-chip input{width:140px}.tiny{padding:7px 9px!important;font-size:12px}.session-selects{display:grid;gap:10px;margin:0 0 18px}
+</style>
+
+<style id="task-garden-step-final-adjustments">
+.step-item,
+.step-row,
+.step-item:hover,
+.step-row:hover {
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+.rose-check,
+.step-check,
+input[type="checkbox"].rose-check {
+  width: 44px !important;
+  height: 44px !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+</style>
+
+
+<style id="task-garden-mobile-step-layout">
+@media (max-width: 600px) {
+  .step-item, .step-row {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .step-item > *, .step-row > * { min-width: 0; }
+  .rose-check, .step-check, input[type="checkbox"].rose-check {
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 !important;
+  }
+  .step-item label, .step-row label {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+    line-height: 1.35 !important;
+  }
+}
+</style>
+
+
+<style id="task-garden-step-alignment">
+@media (max-width:600px){
+  .progress-steps,.steps{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+  .step{display:flex;align-items:center;justify-content:flex-start;width:100%;min-width:0;box-sizing:border-box;border:none!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;padding:0;font-size:14px;line-height:1.4}
+  .step input{flex:0 0 54px;width:54px;height:54px;min-width:54px}
+  .step-label{flex:1;min-width:0;overflow-wrap:anywhere;word-break:break-word}
+}
+</style>
+
+<style id="task-garden-step-mobile-fix">
+@media (max-width:600px){
+  .progress-steps,.steps{display:flex;flex-direction:column;align-items:stretch;gap:7px;margin-top:10px}
+  .step{display:flex;align-items:center;justify-content:flex-start;width:100%;min-width:0;border:none!important;background:transparent!important;box-shadow:none!important;border-radius:0;padding:0;gap:9px;font-size:14px;line-height:1.4}
+  .step input{width:54px;height:54px;min-width:54px;flex:0 0 54px}
+  .step-label{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;word-break:break-word}
+}
+</style>
+</head>
+<body>
+  <main class="app">
+    <header><div><h1>Task Garden</h1><div class="subtitle">One Step at a Time.</div><p class="lede">締切と、作業後に残すひとことだけで、次に向き合う案件を見つける。</p></div><button class="primary" id="newProject">案件を追加</button></header>
+    <div class="filter" id="filters"><button class="active" data-filter="all">すべて</button><button data-filter="work">本業</button><button data-filter="personal">個人</button></div>
+    <section class="today"><div class="section-label" id="pickLabel">いま、着手するなら</div><div id="topPick" class="pick empty"></div></section>
+    <section><div class="queue-head"><div class="section-label" style="margin:0">着手候補</div><p id="queueDescription"></p></div><div id="queue" class="cards"></div></section>
+    <footer><span id="storageNote">データはこのブラウザ内に保存されます。</span><span><button id="syncBtn">同期を設定</button> · <button id="exportBtn">バックアップを書き出す</button> · <button id="importBtn">読み込む</button><input id="importFile" type="file" accept="application/json" hidden></span></footer>
+  </main>
+  <dialog id="projectDialog"><form class="modal" id="projectForm"><h2>案件を追加</h2><p>1案件の中に複数の制作物を登録できます。制作物ごとの作業ステップも自由に決められます。</p><label for="title">案件名</label><input id="title" required maxlength="80" autocomplete="off" placeholder="例：書籍の装丁" /><label for="kind">区分</label><select id="kind"><option value="work">本業</option><option value="personal">個人</option></select><label for="due">締切</label><input id="due" required type="date" /><label for="deadlineKind">この納期は</label><select id="deadlineKind"><option value="strict">厳守</option><option value="flexible">目安（多少の調整可）</option></select><label>制作物</label><div id="itemBuilders"></div><button type="button" class="secondary tiny" id="addItemBuilder">＋ 制作物を追加</button><div class="modal-actions"><button type="button" class="secondary" data-close>やめる</button><button class="primary" type="submit">追加する</button></div></form></dialog>
+  <dialog id="sessionDialog"><div class="modal"><div class="section-label">今回の案件</div><h2 class="session-name" id="sessionTitle"></h2><div class="session-selects"><select id="sessionItem"></select><select id="sessionStep"></select></div><label style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px"><input id="sessionCompleteStep" type="checkbox" style="width:auto"> このステップを完了にする</label><p>作業後、必要なら選んだステップを完了にできます。そのうえで今日の手触りを一つだけ選んでください。</p><div class="outcomes"><button class="outcome" data-outcome="big"><img src="./garnet_big.webp" alt="大きなガーネット" />大きく進んだ<small>核が見えた、決まった、形になった</small></button><button class="outcome" data-outcome="small"><img src="./garnet_small.webp" alt="小さなガーネット" />少し進んだ<small>前に進んだ感覚はあるが、まだ決定的ではない</small></button><button class="outcome" data-outcome="stuck"><img src="./garnet_stuck.webp" alt="曇って欠けたガーネット" />詰まった<small>今日は動かなかった。次の候補として浮上させる</small></button></div><div class="modal-actions"><button class="secondary" id="cancelSession">まだ終わっていない</button></div></div></dialog>
+  <dialog id="detailDialog"><div class="modal"><div class="section-label">案件の様子</div><h2 id="detailTitle"></h2><p id="detailText"></p><div id="detailItems" class="work-items"></div><div class="project-info"><details><summary>最近の手触りを見る</summary><div id="history"></div></details><div class="project-actions"><button class="secondary" id="editProject">この案件を編集</button><button class="danger" id="deleteProject">この案件を削除</button></div></div><div class="modal-actions"><button class="primary" data-close>閉じる</button></div></div></dialog>
+  <dialog id="editDialog"><form class="modal" id="editForm"><h2>案件を編集</h2><p>案件情報に加えて、制作物と作業ステップも自由に変更できます。完了済みのステップ状態は、名前を変えても引き継がれます。</p><label for="editTitle">案件名</label><input id="editTitle" required maxlength="80" autocomplete="off" /><label for="editKind">区分</label><select id="editKind"><option value="work">本業</option><option value="personal">個人</option></select><label for="editDue">締切</label><input id="editDue" required type="date" /><label for="editDeadlineKind">この納期は</label><select id="editDeadlineKind"><option value="strict">厳守</option><option value="flexible">目安（多少の調整可）</option></select><label>制作物</label><div id="editItemBuilders"></div><button type="button" class="secondary tiny" id="addEditItemBuilder">＋ 制作物を追加</button><div class="modal-actions"><button type="button" class="secondary" id="cancelEdit">キャンセル</button><button class="primary" type="submit">変更を保存</button></div></form></dialog>
+  <dialog id="syncDialog"><div class="modal"><h2>スマホでも同じ一覧を開く</h2><p id="syncIntro">一度つなげると、PCで加えた案件や記録が、スマホを開いたときにもそのまま見られます。</p><div id="syncConfig"><label for="sbUrl">保存先のURL</label><input id="sbUrl" type="url" placeholder="https://xxxxx.supabase.co" autocomplete="off" /><label for="sbKey">接続用の公開キー</label><input id="sbKey" type="password" autocomplete="off" /><p>この2つは、保存先を作ったあとに表示されます。まだの場合は「Supabase同期設定」を見てください。</p><div class="modal-actions"><button class="secondary" data-close>あとで</button><button class="primary" id="saveSyncConfig">つなぐ</button></div></div><div id="syncAuth" hidden><label for="syncEmail">メールアドレス</label><input id="syncEmail" type="email" autocomplete="email" /><label for="syncPassword">パスワード</label><input id="syncPassword" type="password" autocomplete="current-password" /><p id="authMessage">PCとスマホで同じものを使ってください。</p><div class="modal-actions"><button class="secondary" id="signUp">初めて登録する</button><button class="primary" id="signIn">ログイン</button></div></div><div id="syncConnected" hidden><p><span class="sync-state">● 同期できています</span><br>ここで加えた内容は、ほかの端末にも反映されます。</p><div class="modal-actions"><button class="secondary" id="signOut">この端末だけ外す</button><button class="primary" data-close>閉じる</button></div></div></div></dialog>
+  <datalist id="itemNameSuggestions"></datalist>
+  <datalist id="stepNameSuggestions"></datalist>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const KEY = 'project-picker-v1';
+    const SYNC_KEY = 'project-picker-supabase-v1';
+    function normalizeItems(p){
+      if(Array.isArray(p.items)&&p.items.length)return p.items.map((it,i)=>({id:it.id||crypto.randomUUID(),name:it.name||`制作物${i+1}`,steps:Array.isArray(it.steps)&&it.steps.length?it.steps.map((st,j)=>({id:st.id||crypto.randomUUID(),name:st.name||`作業${j+1}`,done:!!st.done})): [{id:crypto.randomUUID(),name:'作業',done:false}]}));
+      return [{id:crypto.randomUUID(),name:'メイン',steps:[{id:crypto.randomUUID(),name:'作業',done:false}]}];
+    }
+    let projects = JSON.parse(localStorage.getItem(KEY) || '[]').map(p => ({...p, kind:p.kind||'work', deadlineKind:p.deadlineKind||'strict', log:p.log||[], items:normalizeItems(p)}));
+    let activeId = null, detailId = null;
+    let filter = 'all';
+    let supabaseClient = null, syncTimer = null, isLoadingRemote = false;
+    const $ = s => document.querySelector(s);
+    const today = () => new Date(new Date().toDateString());
+    const dayDiff = due => Math.ceil((new Date(due+'T00:00:00') - today()) / 86400000);
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const save = () => { localStorage.setItem(KEY, JSON.stringify(projects)); scheduleSync(); };
+    const syncConfig = () => JSON.parse(localStorage.getItem(SYNC_KEY) || 'null');
+    function setupClient() { const c=syncConfig(); if(!c?.url || !c?.key || !window.supabase) return null; supabaseClient=window.supabase.createClient(c.url,c.key); return supabaseClient; }
+    function setStorageNote(text, synced=false) { $('#storageNote').innerHTML=synced?`<span class="sync-state">● ${text}</span>`:text; }
+    async function loadRemote() {
+      if (!supabaseClient || isLoadingRemote) return;
+      const {data:{user}}=await supabaseClient.auth.getUser(); if(!user) return;
+      isLoadingRemote=true;
+      const {data,error}=await supabaseClient.from('project_picker_state').select('state').eq('user_id',user.id).maybeSingle();
+      if (error) { setStorageNote('同期エラー：設定を確認してください'); isLoadingRemote=false; return; }
+      if (data?.state) { projects=data.state.map(p=>({...p,kind:p.kind||'work',deadlineKind:p.deadlineKind||'strict',log:p.log||[],items:normalizeItems(p)})); localStorage.setItem(KEY,JSON.stringify(projects)); render(); }
+      else await pushRemote();
+      isLoadingRemote=false; setStorageNote('同期中');
+    }
+    async function pushRemote() {
+      if (!supabaseClient || isLoadingRemote) return;
+      const {data:{user}}=await supabaseClient.auth.getUser(); if(!user) return;
+      const {error}=await supabaseClient.from('project_picker_state').upsert({user_id:user.id,state:projects,updated_at:new Date().toISOString()});
+      setStorageNote(error?'同期エラー：設定を確認してください':'同期中',!error);
+    }
+    function scheduleSync() { if(!supabaseClient || isLoadingRemote)return; clearTimeout(syncTimer); syncTimer=setTimeout(pushRemote,500); }
+    async function refreshSyncUI() {
+      const c=syncConfig(); if(!c){$('#syncConfig').hidden=false;$('#syncAuth').hidden=true;$('#syncConnected').hidden=true;return;}
+      if(!supabaseClient) setupClient(); const {data:{user}}=await supabaseClient.auth.getUser();
+      $('#syncConfig').hidden=true; $('#syncAuth').hidden=!!user; $('#syncConnected').hidden=!user;
+      if(user){ setStorageNote('同期中',true); await loadRemote(); }
+    }
+    function score(p) {
+      const days = dayDiff(p.due), log = p.log || [];
+      const recent = log.slice(-4);
+      const lastBig = [...log].reverse().find(x => x.outcome === 'big');
+      const daysSinceBig = lastBig ? Math.max(0, Math.floor((today()-new Date(lastBig.date+'T00:00:00'))/86400000)) : 21;
+      const stuck = recent.filter(x => x.outcome === 'stuck').length;
+      const small = recent.filter(x => x.outcome === 'small').length;
+      let s = 0;
+      const deadlineWeight = p.deadlineKind === 'strict' ? 1 : .43;
+      s += (days <= 0 ? 150 : Math.max(0, 62 - days * 2.1)) * deadlineWeight;
+      s += Math.min(42, daysSinceBig * 2.2);
+      s += stuck * 18 + small * 3;
+      if (recent[recent.length-1]?.outcome === 'big') s -= 30;
+      return s;
+    }
+    function reason(p) {
+      const days = dayDiff(p.due), log=p.log||[], last=log[log.length-1];
+      const prefix=p.deadlineKind==='strict' ? '厳守の' : '目安の';
+      if (days <= 0) return `${prefix}締切を過ぎています`;
+      if (days <= 3) return `${prefix}締切まであと${days}日`;
+      if (last?.outcome === 'stuck') return '前回、詰まりが残っています';
+      const lastBig = [...log].reverse().find(x=>x.outcome==='big');
+      if (!lastBig) return 'まだ「大きく進んだ」がありません';
+      const ago = Math.floor((today()-new Date(lastBig.date+'T00:00:00'))/86400000);
+      if (ago >= 7) return `${ago}日間、大きな前進がありません`;
+      return `締切まであと${days}日`;
+    }
+    function tags(p) { const d=dayDiff(p.due), last=(p.log||[]).at(-1); let status=d<=3&&p.deadlineKind==='strict'?'<span class="tag hot">締切が近い</span>':last?.outcome==='stuck'?'<span class="tag stuck">詰まり中</span>':'<span class="tag">進行中</span>'; const kind=`<span class="tag">${p.kind==='work'?'本業':'個人'}</span>`; const deadline=`<span class="tag">${p.deadlineKind==='strict'?'納期厳守':'納期目安'}</span>`; return `${kind} ${deadline} ${status}`; }
+    function render() {
+      const visible=filter==='all'?projects:projects.filter(p=>p.kind===filter);
+      const sorted=[...visible].sort((a,b)=>score(b)-score(a) || dayDiff(a.due)-dayDiff(b.due));
+      const top=$('#topPick'), queue=$('#queue');
+      $('#queueDescription').textContent = sorted.length ? `${sorted.length}件の案件` : '';
+      $('#pickLabel').textContent=filter==='all'?'いま、着手するなら':`${filter==='work'?'本業':'個人'}で、いま着手するなら`;
+      if (!sorted.length) { top.className='pick empty'; top.innerHTML=`<div>${filter==='all'?'まだ案件がありません。<br>締切を入れると、最初の候補を提示します。':`${filter==='work'?'本業':'個人'}の案件はありません。`}</div>`; queue.innerHTML=''; return; }
+      const p=sorted[0], d=dayDiff(p.due);
+      const progressHtml=(p)=>{const items=p.items||normalizeItems(p); const total=items.reduce((a,it)=>a+it.steps.length,0); const doneTotal=items.reduce((a,it)=>a+it.steps.filter(st=>st.done).length,0); return `<div class="top-progress"><div class="progress-head"><span>制作物の進捗</span><span>${doneTotal} / ${total}工程</span></div>${items.map(it=>{const done=it.steps.filter(st=>st.done).length; return `<div class="progress-item"><div class="progress-item-head"><strong>${esc(it.name)}</strong><span>${done} / ${it.steps.length}</span></div><div class="steps progress-steps">${it.steps.map(st=>`<label class="step ${st.done?'done':''}"><input type="checkbox" data-project-step="${p.id}|${it.id}|${st.id}" ${st.done?'checked':''}>${esc(st.name)}</label>`).join('')}</div></div>`;}).join('')}</div>`;};
+      top.className='pick'; top.innerHTML=`<div class="pick-top"><div><div class="section-label">最優先候補</div><h2>${esc(p.title)}</h2><div class="meta">締切 ${p.due.replaceAll('-','/')} · ${d<0?`<span class="due-days">${Math.abs(d)}日超過</span>`:d===0?'<span class="due-days">今日</span>':`あと<span class="due-days">${d}日</span>`}</div></div><div>${tags(p)}</div></div><div class="reason">${reason(p)}</div>${progressHtml(p)}<div class="pick-actions"><button class="primary" data-start="${p.id}">この案件を始める</button><button class="secondary" data-detail="${p.id}">様子を見る</button></div>`;
+      queue.innerHTML=sorted.map((p,i)=>`<div class="card"><button class="card-main" data-start="${p.id}"><div class="rank">${String(i+1).padStart(2,'0')}　${tags(p)}</div><h3>${esc(p.title)}</h3><div class="meta">締切 ${p.due.replaceAll('-','/')} · ${dayDiff(p.due)<=0?'<span class="due-days">期限超過</span>':`あと<span class="due-days">${dayDiff(p.due)}日</span>`}</div><div class="reason">${reason(p)}</div><div class="meta">制作物 ${p.items?.length||1}件</div></button>${progressHtml(p)}<div class="card-actions"><button class="secondary card-edit" data-edit="${p.id}">編集</button><button class="danger card-delete" data-delete="${p.id}">削除</button></div></div>`).join('');
+    }
+    function openSession(id){ activeId=id; const p=projects.find(x=>x.id===id); if(!p)return; $('#sessionTitle').textContent=p.title; const item=$('#sessionItem'); item.innerHTML=p.items.map((it,i)=>`<option value="${it.id}">${esc(it.name)}</option>`).join(''); const fillSteps=()=>{const it=p.items.find(x=>x.id===item.value)||p.items[0];$('#sessionStep').innerHTML=it.steps.map(st=>`<option value="${st.id}">${st.done?'✓ ':''}${esc(st.name)}</option>`).join('');}; item.onchange=fillSteps; fillSteps(); $('#sessionDialog').showModal(); }
+    document.addEventListener('click', e=>{ const start=e.target.closest('[data-start]'); const detail=e.target.closest('[data-detail]'); if(start) openSession(start.dataset.start); if(detail) openDetail(detail.dataset.detail); if(e.target.matches('[data-close]')) e.target.closest('dialog').close(); });
+    $('#newProject').onclick=()=>$('#projectDialog').showModal();
+    document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
+    function getHistoryTemplates(){
+      const map=new Map();
+      projects.forEach(p=>(p.items||normalizeItems(p)).forEach(it=>{
+        const name=(it.name||'').trim(); if(!name)return;
+        const steps=(it.steps||[]).map(st=>(st.name||'').trim()).filter(Boolean);
+        const key=name+'\u0000'+steps.join('\u0001');
+        if(!map.has(key))map.set(key,{name,steps});
+      }));
+      return [...map.values()];
+    }
+    function refreshSuggestions(){
+      const templates=getHistoryTemplates();
+      $('#itemNameSuggestions').innerHTML=templates.map(x=>`<option value="${esc(x.name)}"></option>`).join('');
+      const steps=[...new Set(templates.flatMap(x=>x.steps))];
+      $('#stepNameSuggestions').innerHTML=steps.map(x=>`<option value="${esc(x)}"></option>`).join('');
+    }
+    function readItemBuilders(){return [...document.querySelectorAll('#itemBuilders .item-builder')].map((box,i)=>({id:crypto.randomUUID(),name:(box.querySelector('.item-name').value.trim()||`制作物${i+1}`),steps:[...box.querySelectorAll('.step-name')].map((el,j)=>({id:crypto.randomUUID(),name:el.value.trim()||`作業${j+1}`,done:false}))})).filter(it=>it.steps.length);}
+    function addItemBuilder(name='',steps=['作業']){const box=document.createElement('div');box.className='item-builder';box.innerHTML=`<div class="item-builder-head"><input class="item-name" list="itemNameSuggestions" maxlength="60" placeholder="制作物名（例：立ち絵A）" value="${esc(name)}"><div style="display:flex;gap:6px"><button type="button" class="secondary tiny copy-item-history">過去からコピー</button><button type="button" class="secondary tiny remove-item">削除</button></div></div><div class="step-builder"></div><button type="button" class="secondary tiny add-step">＋ 作業ステップ</button>`;const sb=box.querySelector('.step-builder');steps.forEach(x=>addNewStepChip(sb,x));$('#itemBuilders').appendChild(box);box.querySelector('.add-step').onclick=()=>addNewStepChip(sb,'');box.querySelector('.copy-item-history').onclick=()=>showHistoryCopyMenu(box,'new');box.querySelector('.remove-item').onclick=()=>box.remove();}
+    function addNewStepChip(sb,name=''){const chip=document.createElement('div');chip.className='step-chip';chip.innerHTML=`<input class="step-name" list="stepNameSuggestions" maxlength="40" placeholder="作業ステップ" value="${esc(name)}"><button type="button" class="secondary tiny remove-step">×</button>`;sb.appendChild(chip);chip.querySelector('.remove-step').onclick=()=>chip.remove();}
+    function showHistoryCopyMenu(box,mode){
+      const templates=getHistoryTemplates();
+      if(!templates.length){alert('まだ過去の制作物がありません。');return;}
+      const text=templates.map((x,i)=>`${i+1}. ${x.name}${x.steps.length?`（${x.steps.join(' → ')}）`:''}`).join('\n');
+      const answer=prompt(`コピーする制作物の番号を入力してください。\n\n${text}`,'1');
+      if(answer===null)return;
+      const idx=Number(answer)-1, t=templates[idx];
+      if(!t)return alert('番号が見つかりません。');
+      const target=mode==='new'?box:box;
+      target.querySelector('.item-name').value=t.name;
+      const sb=target.querySelector('.step-builder'); sb.innerHTML=''; t.steps.forEach(st=>addNewStepChip(sb,st));
+    }
+    $('#addItemBuilder').onclick=()=>addItemBuilder();
+    $('#newProject').addEventListener('click',()=>{ refreshSuggestions(); $('#itemBuilders').innerHTML=''; addItemBuilder('', ['作業']); });
+    $('#projectForm').onsubmit=e=>{ e.preventDefault(); const items=readItemBuilders(); if(!items.length){alert('制作物を1つ以上追加してください。');return;} projects.push({id:crypto.randomUUID(),title:$('#title').value.trim(),kind:$('#kind').value,due:$('#due').value,deadlineKind:$('#deadlineKind').value,log:[],items}); save(); refreshSuggestions(); e.target.reset(); $('#itemBuilders').innerHTML=''; $('#projectDialog').close(); render(); };
+    document.querySelectorAll('[data-outcome]').forEach(b=>b.onclick=()=>{ const p=projects.find(x=>x.id===activeId); const it=p.items.find(x=>x.id===$('#sessionItem').value); const st=it?.steps.find(x=>x.id===$('#sessionStep').value); if(st && $('#sessionCompleteStep').checked) st.done=true; p.log.push({date:today().toISOString().slice(0,10),outcome:b.dataset.outcome,itemId:it?.id||null,stepId:st?.id||null}); save(); $('#sessionDialog').close(); render(); });
+    $('#cancelSession').onclick=()=>$('#sessionDialog').close();
+    function openDetail(id){ detailId=id; const p=projects.find(x=>x.id===id); if(!p)return; const log=p.log||[]; $('#detailTitle').textContent=p.title; $('#detailText').textContent=`${p.kind==='work'?'本業':'個人'} · ${p.deadlineKind==='strict'?'納期厳守':'納期目安'}。締切は ${p.due.replaceAll('-','/')}。${reason(p)}。`; $('#detailItems').innerHTML=`<div class="section-label">制作物と作業ステップ</div>${p.items.map(it=>`<div class="work-item"><div class="work-item-head"><span class="work-item-name">${esc(it.name)}</span></div><div class="steps">${it.steps.map(st=>`<label class="step ${st.done?'done':''}"><input type="checkbox" data-step-toggle="${it.id}|${st.id}" ${st.done?'checked':''}>${esc(st.name)}</label>`).join('')}</div></div>`).join('')}`; $('#history').innerHTML=log.length ? [...log].reverse().map(x=>`<p>${x.date.replaceAll('-','/')}　${({big:'大きく進んだ',small:'少し進んだ',stuck:'進まなかった／詰まった'})[x.outcome]}</p>`).join('') : '<p>まだ記録はありません。</p>'; $('#detailDialog').showModal(); }
+    document.addEventListener('click', e=>{ const del=e.target.closest('[data-delete]'); if(del){ const p=projects.find(x=>x.id===del.dataset.delete); if(p && confirm(`「${p.title}」を削除しますか？`)){projects=projects.filter(x=>x.id!==p.id);save();render();} return; } const edit=e.target.closest('[data-edit]'); if(edit){ const p=projects.find(x=>x.id===edit.dataset.edit); if(!p)return; openEdit(p); } });
+    function addEditItemBuilder(item={name:'',steps:[]}){const box=document.createElement('div');box.className='item-builder';box.dataset.itemId=item.id||crypto.randomUUID();box.innerHTML=`<div class="item-builder-head"><input class="item-name" list="itemNameSuggestions" maxlength="60" placeholder="制作物名（例：立ち絵A）" value="${esc(item.name||'')}"><div style="display:flex;gap:6px"><button type="button" class="secondary tiny copy-item-history">過去からコピー</button><button type="button" class="secondary tiny move-item-up">↑</button><button type="button" class="secondary tiny move-item-down">↓</button><button type="button" class="secondary tiny remove-item">削除</button></div></div><div class="step-builder"></div><button type="button" class="secondary tiny add-step">＋ 作業ステップ</button>`;const sb=box.querySelector('.step-builder');(item.steps||[]).forEach(st=>addEditStep(sb,st));$('#editItemBuilders').appendChild(box);wireEditItemBox(box);}
+    function addEditStep(sb,st={name:'',done:false,id:null}){const chip=document.createElement('div');chip.className='step-chip';chip.dataset.stepId=st.id||crypto.randomUUID();chip.innerHTML=`<input class="step-name" list="stepNameSuggestions" maxlength="40" placeholder="作業ステップ" value="${esc(st.name||'')}"><div style="display:flex;gap:4px"><button type="button" class="secondary tiny move-step-up">↑</button><button type="button" class="secondary tiny move-step-down">↓</button><button type="button" class="secondary tiny remove-step">×</button></div>`;chip.dataset.done=st.done?'1':'0';sb.appendChild(chip);wireEditStep(chip);}
+    function wireEditStep(chip){chip.querySelector('.remove-step').onclick=()=>{if(chip.parentElement.children.length>1)chip.remove();else alert('作業ステップは1つ以上必要です。');};chip.querySelector('.move-step-up').onclick=()=>{const prev=chip.previousElementSibling;if(prev)chip.parentElement.insertBefore(chip,prev);};chip.querySelector('.move-step-down').onclick=()=>{const next=chip.nextElementSibling;if(next)chip.parentElement.insertBefore(next,chip);};}
+    function wireEditItemBox(box){box.querySelector('.copy-item-history').onclick=()=>showHistoryCopyMenu(box,'edit');box.querySelector('.remove-item').onclick=()=>{if($('#editItemBuilders').children.length>1)box.remove();else alert('制作物は1つ以上必要です。');};box.querySelector('.add-step').onclick=()=>addEditStep(box.querySelector('.step-builder'));box.querySelector('.move-item-up').onclick=()=>{const prev=box.previousElementSibling;if(prev)box.parentElement.insertBefore(box,prev);};box.querySelector('.move-item-down').onclick=()=>{const next=box.nextElementSibling;if(next)box.parentElement.insertBefore(next,box);};}
+    function loadEditItems(p){const wrap=$('#editItemBuilders');wrap.innerHTML='';(p.items?.length?p.items:normalizeItems(p)).forEach(it=>addEditItemBuilder(it));}
+    function readEditItems(){return [...document.querySelectorAll('#editItemBuilders .item-builder')].map((box,i)=>({id:box.dataset.itemId||crypto.randomUUID(),name:box.querySelector('.item-name').value.trim()||`制作物${i+1}`,steps:[...box.querySelectorAll('.step-chip')].map((chip,j)=>({id:chip.dataset.stepId||crypto.randomUUID(),name:chip.querySelector('.step-name').value.trim()||`作業${j+1}`,done:chip.dataset.done==='1'}))})).filter(it=>it.steps.length);}
+    function openEdit(p){ refreshSuggestions(); detailId=p.id; $('#editTitle').value=p.title; $('#editKind').value=p.kind||'work'; $('#editDue').value=p.due||''; $('#editDeadlineKind').value=p.deadlineKind||'strict'; loadEditItems(p); $('#editDialog').showModal(); }
+    $('#addEditItemBuilder').onclick=()=>addEditItemBuilder({name:'',steps:[{name:'',done:false}]});
+    $('#editProject').onclick=()=>{ const p=projects.find(x=>x.id===detailId); if(!p)return; $('#detailDialog').close(); openEdit(p); };
+    $('#cancelEdit').onclick=()=>$('#editDialog').close();
+    $('#editForm').onsubmit=e=>{ e.preventDefault(); const p=projects.find(x=>x.id===detailId); if(!p){$('#editDialog').close();return;} const items=readEditItems(); if(!items.length){alert('制作物を1つ以上追加してください。');return;} p.title=$('#editTitle').value.trim(); p.kind=$('#editKind').value; p.due=$('#editDue').value; p.deadlineKind=$('#editDeadlineKind').value; p.items=items; save(); refreshSuggestions(); $('#editDialog').close(); render(); openDetail(detailId); };
+    document.addEventListener('change',e=>{const el=e.target.closest('[data-project-step],[data-step-toggle]');if(!el)return;if(el.dataset.projectStep){const [pid,iid,sid]=el.dataset.projectStep.split('|');const p=projects.find(x=>x.id===pid);const it=p?.items.find(x=>x.id===iid);const st=it?.steps.find(x=>x.id===sid);if(st){st.done=el.checked;save();render();}return;}const [iid,sid]=el.dataset.stepToggle.split('|');const p=projects.find(x=>x.id===detailId);const it=p?.items.find(x=>x.id===iid);const st=it?.steps.find(x=>x.id===sid);if(st){st.done=el.checked;save();openDetail(detailId);render();}});
+    $('#deleteProject').onclick=()=>{ const p=projects.find(x=>x.id===detailId); if(p && confirm(`「${p.title}」を削除しますか？`)){projects=projects.filter(x=>x.id!==detailId);save();$('#detailDialog').close();render();} };
+    $('#exportBtn').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(projects,null,2)],{type:'application/json'})); a.download='案件選択器バックアップ.json'; a.click(); URL.revokeObjectURL(a.href); };
+    $('#importBtn').onclick=()=>$('#importFile').click(); $('#importFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{try{const x=JSON.parse(r.result);if(!Array.isArray(x))throw 0;projects=x;save();render();}catch{alert('読み込めませんでした。案件選択器のバックアップJSONを選んでください。')}};r.readAsText(f);e.target.value=''; };
+    $('#filters').onclick=e=>{const b=e.target.closest('[data-filter]');if(!b)return;filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));render();};
+    $('#syncBtn').onclick=async()=>{ $('#syncDialog').showModal(); await refreshSyncUI(); };
+    $('#saveSyncConfig').onclick=async()=>{ const url=$('#sbUrl').value.trim().replace(/\/$/,''), key=$('#sbKey').value.trim(); if(!/^https:\/\/.+\.supabase\.co$/.test(url)||!key){alert('保存先のURLと接続用の公開キーを確認してください。');return;} localStorage.setItem(SYNC_KEY,JSON.stringify({url,key})); supabaseClient=null; setupClient(); await refreshSyncUI(); };
+    async function authAction(mode) { const email=$('#syncEmail').value.trim(), password=$('#syncPassword').value; if(!email||!password){$('#authMessage').textContent='メールアドレスとパスワードを入れてください。';return;} const result=mode==='signup'?await supabaseClient.auth.signUp({email,password}):await supabaseClient.auth.signInWithPassword({email,password}); if(result.error){$('#authMessage').textContent=`うまくつながりませんでした：${result.error.message}`;return;} if(mode==='signup'&&!result.data.session){$('#authMessage').textContent='確認メールを送りました。メールを開いたあと、ここでログインしてください。';return;} await refreshSyncUI(); }
+    $('#signUp').onclick=()=>authAction('signup'); $('#signIn').onclick=()=>authAction('signin');
+    $('#signOut').onclick=async()=>{await supabaseClient.auth.signOut();setStorageNote('データはこのブラウザ内に保存されます。');await refreshSyncUI();};
+    setupClient(); refreshSyncUI();
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')loadRemote();});
+    setInterval(loadRemote,30000);
+    render();
+  </script>
+</body>
+</html>
